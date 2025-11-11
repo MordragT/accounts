@@ -1,22 +1,37 @@
 # Accounts for COSMIC - Build and Installation Commands
 
-name := 'accounts'
-ui-name := 'accounts-ui'
 appid := 'dev.edfloreshz.Accounts'
+
+name1 := 'accounts-daemon'
+name2 := 'accounts-ui'
+
 rootdir := ''
 prefix := '/usr'
 base-dir := absolute_path(clean(rootdir / prefix))
+
+bin1-src := 'target' / 'release' / name1
+bin1-path := 'bin' / name1
+bin1-dst := base-dir / bin1-path
+
+etc-src := name1 / 'data' / 'providers'
 etc-dst := clean(rootdir) / 'etc' / 'accounts' / 'providers'
-bin-dst := base-dir / 'bin'
+
+dbus-src := name1 / 'data' / 'cosmic-accounts.service'
 dbus-dst := clean(rootdir / prefix) / 'share' / 'dbus-1' / 'services'
 
+bin2-src := 'target' / 'release' / name2
+bin2-path := 'bin' / name2
+bin2-dst := base-dir / bin2-path
+
 desktop := appid + '.desktop'
-desktop-src := ui-name / 'resources' / desktop
+desktop-src := name2 / 'resources' / desktop
 desktop-dst := clean(rootdir / prefix) / 'share' / 'applications' / desktop
+
 appdata := appid + '.metainfo.xml'
-appdata-src := ui-name / 'resources' / appdata
+appdata-src := name2 / 'resources' / appdata
 appdata-dst := clean(rootdir / prefix) / 'share' / 'appdata' / appdata
-icons-src := ui-name / 'resources' / 'icons' / 'hicolor'
+
+icons-src := name2 / 'resources' / 'icons' / 'hicolor'
 icons-dst := clean(rootdir / prefix) / 'share' / 'icons' / 'hicolor'
 icon-svg-src := icons-src / 'scalable' / 'apps' / 'icon.svg'
 icon-svg-dst := icons-dst / 'scalable' / 'apps' / appid + '.svg'
@@ -67,19 +82,19 @@ clean:
 
 # Install daemon system-wide (requires sudo)
 install-daemon: build-daemon
-    install -Dm0755 target/release/accounts-daemon -t {{ bin-dst }}
-    install -Dm0644 accounts-daemon/data/cosmic-accounts.service -t {{ dbus-dst }}
+    install -Dm0755 {{bin1-src}} {{bin1-dst}}
+    install -Dm0644 {{dbus-src}} {{dbus-dst}}
 
 # Install GUI system-wide (requires sudo)
 install-gui: build-gui
-    install -Dm0755 target/release/accounts-ui -t {{ bin-dst }}
-    install -Dm0644 accounts-ui/resources/app.desktop {{desktop-dst}}
-    install -Dm0644 accounts-ui/resources/app.metainfo.xml {{appdata-dst}}
+    install -Dm0755 {{bin2-src}} {{bin2-dst}}
+    install -Dm0644 {{desktop-src}} {{desktop-dst}}
+    install -Dm0644 {{appdata-src}} {{appdata-dst}}
     install -Dm0644 {{icon-svg-src}} {{icon-svg-dst}}
 
 # Install provider configurations (requires sudo)
 install-configs:
-    install -Dm0644 accounts-daemon/data/providers/*.toml -t {{ etc-dst }}
+    install -Dm0644 {{etc-src}} {{etc-dst}}
     @echo "Remember to update OAuth2 credentials in /etc/accounts/providers/"
 
 # Install everything (requires sudo)
@@ -87,10 +102,13 @@ install: build install-daemon install-gui install-configs
 
 # Uninstall system files (requires sudo)
 uninstall:
-    sudo rm -f /usr/bin/accounts-daemon
-    sudo rm -f /usr/bin/accounts-ui
-    sudo rm -f /usr/share/dbus-1/services/accounts.service
-    sudo rm -rf /etc/accounts
+    sudo rm -f {{bin1-dst}}
+    sudo rm -f {{bin2-dst}}
+    sudo rm -f {{dbus-dst}}
+    sudo rm -rf {{etc-dst}}
+    sudo rm -f {{desktop-dst}}
+    sudo rm -f {{appdata-dst}}
+    sudo rm -f {{icon-svg-dst}}
 
 # Start the daemon service (user session)
 start-daemon:
